@@ -1,0 +1,74 @@
+# =====================================================================
+# CineLog — .gitignore
+# Basato su template Flutter standard + T2_CONVENZIONI §7.4 + Addendum §5.3
+# =====================================================================
+
+# ---------- Miscellaneous (Flutter default) ----------
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# ---------- IntelliJ / Android Studio ----------
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# ---------- VS Code ----------
+# Lasciato commentato di default: si potrebbe voler condividere
+# launch.json o settings.json di progetto con il team.
+# Per ora lo escludiamo, lo riattiveremo se serve.
+.vscode/
+
+# ---------- Flutter / Dart / Pub ----------
+.metadata
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+.packages
+/build/
+/coverage/
+coverage/
+
+# ---------- Symbolication / Obfuscation ----------
+app.*.symbols
+app.*.map.json
+
+# ---------- Android ----------
+/android/app/debug
+/android/app/profile
+/android/app/release
+*.keystore
+*.jks
+google-services.json
+
+# ---------- iOS / macOS ----------
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+GoogleService-Info.plist
+
+# ---------- OS ----------
+Thumbs.db
+
+# ---------- Secrets & environment (CRITICO) ----------
+.env
+.env.local
+.env.*.local
+
+# ---------- Test runner cache ----------
+test/.test_runner.dart
