@@ -1,7 +1,7 @@
 # CineLog — Problemi Aperti e Punti di Attenzione
 
 **Tier 1 — Documento vivo.**
-**Aggiornato:** Maggio 2026 (fine sessione 0.A pre-coding: #1 e #19 segnati "in progress" - non ancora chiusi)
+**Aggiornato:** 15/05/2026 (fine sessione Modulo 0.A tecnico: #1 e #19 chiusi, #22 aggiunto)
 **Scope:** Lista completa dei bug, smell architetturali e punti di attenzione emersi dall'analisi del codebase v1. Bussola operativa per i moduli successivi.
 **Audience:** chiunque debba pianificare interventi sul codice.
 
@@ -14,32 +14,35 @@
 - 🔴 **Grave** — sicurezza, bug logico, problema che blocca il pivot al backend
 - 🟡 **Medio** — bug o limitazione che non blocca ma va sistemato nel modulo opportuno
 - 🟢 **Minore** — smell, polish, lint, refactoring opportunistico
+- ✅ **Chiuso** — fix completato, riga conservata come memoria storica
 
 ## Indice rapido per priorità
 
-**Gravi aperti (🔴)**: #1 🟡in progress, #2, #3, #4, #5, #6, #19 🟡in progress, #20
+**Chiusi (✅)**: #1, #19
+
+**Gravi aperti (🔴)**: #2, #3, #4, #5, #6, #20
 
 **Medi aperti (🟡)**: #21
 
-**Minori aperti (🟢)**: #7, #8, #9, #10, #11, #12, #13, #14, #15, #16, #17, #18
+**Minori aperti (🟢)**: #7, #8, #9, #10, #11, #12, #13, #14, #15, #16, #17, #18, #22
 
 ---
 
 ## Problemi
 
-### #1 🔴 — API key TMDB hardcoded in `constants.dart`
+### #1 ✅ — API key TMDB hardcoded in `constants.dart`
 - **File**: `lib/core/constants.dart`
 - **Sintomo**: `static const String apiKey = '2952ea50fc43f4fa0f41f0fed731f44f';` esposto nel sorgente.
 - **Causa**: scelta iniziale di pre-backend. Convenzione di sicurezza assente.
 - **Rischio**: chiunque legga il repo (o la sua history Git) ottiene la key.
 - **Fix proposto**: spostare in `.env` non committato, leggere via `flutter_dotenv`. Rigenerare la key sulla dashboard TMDB.
 - **Modulo di chiusura**: 0.A (sicurezza e pulizia repo)
-- **🟡 STATO 14/05/2026 (sessione 0.A pre-coding)**: 
+- **🟡 STATO 14/05/2026 (sessione 0.A pre-coding)**:
   - ✅ Vecchia key revocata su dashboard TMDB, nuova generata, mai esposta in repo
   - ✅ `constants.dart` sterilizzato: `apiKey` ora getter che lancia `UnimplementedError` (placeholder fail-fast)
   - ✅ `.env` aggiunto a `.gitignore`, `.env.example` creato come template committato
   - ⏳ Setup `flutter_dotenv` + `EnvConfig` + refactor di `constants.dart` → prossimo step del 0.A
-  - **Da chiudere completamente quando**: il refactor `EnvConfig.tmdbApiKey` è in repo, il `.env` reale contiene la nuova key, `flutter run` torna a funzionare.
+- **[CHIUSO - Modulo 0.A, 15/05/2026]** Fix completato. `flutter_dotenv ^6.0.1` installato. `.env` registrato come asset Flutter in `pubspec.yaml`. Creato `lib/core/config/env_config.dart` con pattern fail-fast: getter `tmdbApiKey` che lancia `StateError` esplicito se la variabile manca o è vuota. `TmdbConstants.apiKey` delega a `EnvConfig.tmdbApiKey`, rimosso `UnimplementedError` placeholder. La key reale vive solo in `.env` gitignored. Commit `89ff62c`, PR #1 mergiata in `9dce0ac`, tag `v0.A-cleanup`. Test runtime su Chrome: Discovery carica film TMDB regolarmente.
 
 ---
 
@@ -96,17 +99,17 @@
 ---
 
 ### #7 🟢 — `print()` ovunque
-- **File coinvolti**: `repositories/local_storage_service.dart`, `repositories/movie_repository.dart` (17 occorrenze)
+- **File coinvolti**: `repositories/local_storage_service.dart` (13 occorrenze), `repositories/movie_repository.dart` (2 occorrenze) — confermato da `flutter analyze` 15/05/2026
 - **Sintomo**: log di errore via `print`, non strippato in release.
-- **Fix proposto**: `debugPrint` o package `logger`.
+- **Fix proposto**: `debugPrint` o package `logger`. Refactor meccanico delegabile a Claude Code.
 - **Modulo di chiusura**: 0.B
 - **Note dalla scan 14/05/2026**: il finding H-1 della scan Claude Code è un caso particolarmente delicato di questo problema — `print('Error fetching movies from $url: $e')` in `movie_repository.dart:84` stampa un URL contenente la API key. Fix automatico una volta che #7 è risolto (debugPrint è no-op in release, ma resta un caveat: anche in debug build, evitare di stampare URL con chiavi).
 
 ---
 
 ### #8 🟢 — `withOpacity` deprecato
-- **File**: `screens/movie_detail_screen.dart` (e potenzialmente altri)
-- **Fix proposto**: search & replace globale a `withValues(alpha: ...)`.
+- **File**: `screens/movie_detail_screen.dart:122` (confermato da `flutter analyze` 15/05/2026)
+- **Fix proposto**: sostituzione con `withValues(alpha: ...)`. Refactor meccanico delegabile a Claude Code.
 - **Modulo di chiusura**: 0.B
 
 ---
@@ -184,13 +187,14 @@
 
 ---
 
-### #19 🔴 — `main()` non async, manca `WidgetsFlutterBinding.ensureInitialized()`
+### #19 ✅ — `main()` non async, manca `WidgetsFlutterBinding.ensureInitialized()`
 - **File**: `lib/main.dart`
 - **Sintomo**: oggi funziona perché non si inizializzano servizi async prima di `runApp`.
 - **Rischio**: si rompe nel momento esatto in cui aggiungiamo `dotenv.load()` o `Supabase.initialize()`.
 - **Fix proposto**: `void main() async { WidgetsFlutterBinding.ensureInitialized(); await dotenv.load(...); await Supabase.initialize(...); runApp(...); }`
 - **Modulo di chiusura**: 0.A (parte del setup `.env`)
 - **🟡 STATO 14/05/2026**: ancora aperto, da risolvere insieme a #1 nel resto del 0.A.
+- **[CHIUSO - Modulo 0.A, 15/05/2026]** Risolto contestualmente a #1. `lib/main.dart` ora ha `Future<void> main() async`, `WidgetsFlutterBinding.ensureInitialized()` come prima istruzione, `await dotenv.load(fileName: '.env')` prima di `runApp`. Pre-condizione soddisfatta per qualsiasi inizializzazione async futura (Supabase nel Modulo 1, ecc.). Commit `89ff62c`, parte della PR #1 mergiata in `9dce0ac`.
 
 ---
 
@@ -210,11 +214,21 @@
 
 ---
 
+### #22 🟢 — Statistiche: "cinema più frequentato" usa tie-break instabile
+- **File**: `lib/providers/stats_provider.dart` (calcolo `favoriteCinema`)
+- **Sintomo**: a parità di numero di visite tra cinema, viene mostrato l'ultimo cinema inserito come "preferito", invece di un criterio deterministico. Esempi reali testati 15/05/2026: con cin1, cin2, cin3 ciascuno con 1 visita → mostra cin3. Con cin1, cin2, cin3, cin1, cin2, cin4 (cin1 e cin2 con 2 visite ciascuno, cin3 e cin4 con 1) → mostra cin2.
+- **Causa**: aggregazione/sort senza tie-break esplicito. Probabile uso di `lastWhere` o ordinamento in base all'ordine di inserimento. Causa profonda imparentata con il problema #2 (cinema = stringa libera): senza canonica, anche la chiave di aggregazione è instabile.
+- **Rischio**: cosmetico, ma evidenzia un anti-pattern di aggregazione.
+- **Fix proposto**: si risolve naturalmente nel Modulo 3 (cinema canonici via Google Places, `place_id` come chiave deterministica). Tie-break esplicito (es. ordine alfabetico, o "più recente come tiebreaker dichiarato") da aggiungere come parte del refactor di `stats_provider` nel Modulo 3 stesso.
+- **Modulo di chiusura**: 3
+
+---
+
 ## Checklist riassuntiva
 
 | ID | Priorità | Titolo | Modulo chiusura | Status |
 |---|---|---|---|---|
-| 1 | 🔴 | API key TMDB hardcoded | 0.A | 🟡 in progress |
+| 1 | 🔴 | API key TMDB hardcoded | 0.A | ✅ chiuso (15/05/2026) |
 | 2 | 🔴 | Cinema come stringa libera | 3 | aperto |
 | 3 | 🔴 | Validazione assente | 2 + 4 | aperto |
 | 4 | 🔴 | ref.invalidate cinemaNotesProvider | 0.B | aperto |
@@ -232,26 +246,27 @@
 | 16 | 🟢 | `language=it` hardcoded | futuro | aperto |
 | 17 | 🟢 | Cinema model fantasma | 3 | aperto |
 | 18 | 🟢 | Lookup review try/catch | opportunistico | aperto |
-| 19 | 🔴 | main() non async | 0.A | 🟡 in progress |
+| 19 | 🔴 | main() non async | 0.A | ✅ chiuso (15/05/2026) |
 | 20 | 🔴 | Init blocca UI | 1 | aperto |
 | 21 | 🟡 | ColorScheme ignorato | 6 | aperto |
+| 22 | 🟢 | Stats: cinema più frequentato tie-break instabile | 3 | aperto |
 
 ## Statistiche
 
-- **Totale problemi**: 21
-- **Chiusi**: 0
-- **In progress**: 2 (#1, #19 — nel 0.A)
-- **Aperti gravi**: 8
-- **Aperti medi**: 1
-- **Aperti minori**: 12
+- **Totale problemi**: 22
+- **Chiusi**: 2 (#1, #19)
+- **In progress**: 0
+- **Aperti gravi**: 6 (#2, #3, #4, #5, #6, #20)
+- **Aperti medi**: 1 (#21)
+- **Aperti minori**: 13 (#7, #8, #9, #10, #11, #12, #13, #14, #15, #16, #17, #18, #22)
 
 ## Distribuzione per modulo di chiusura
 
-- Modulo 0.A (sicurezza/setup): #1, #19 (entrambi in progress)
+- Modulo 0.A (sicurezza/setup): #1 ✅, #19 ✅
 - Modulo 0.B (quality baseline): #4, #7, #8, #10, (#18 opzionale)
 - Modulo 1 (Supabase + auth): #6, #15, #20
 - Modulo 2 (migration finance): #3 (prima parte), #13, #14
-- Modulo 3 (cinema Places): #2, #17
+- Modulo 3 (cinema Places): #2, #17, #22
 - Modulo 4 (migration reviews/lists): #3 (resto), #5, #12, #18
 - Modulo 6 (polish): #11, #21, #9
 - Futuro: #16
@@ -261,6 +276,7 @@
 ## Note di gestione
 
 - Quando un problema viene chiuso: aggiungere riga `**[CHIUSO - Modulo N, gg/mm/aaaa]** Note sul fix effettivo` alla fine della sua sezione. **NON rimuovere** il problema.
-- Quando emerge un nuovo problema in una sessione, aggiungere con il prossimo ID disponibile (#22, #23, ...).
+- Quando emerge un nuovo problema in una sessione, aggiungere con il prossimo ID disponibile (#23, ...).
 - Aggiornare la **Checklist riassuntiva** e le **Statistiche** ad ogni cambio.
 - Stato intermedio "in progress" (🟡) introdotto in sessione 0.A pre-coding (14/05/2026): un problema può essere in progress se il fix è iniziato ma non completato.
+- Stato "chiuso" (✅) introdotto in sessione 0.A tecnico (15/05/2026): un problema diventa chiuso quando il fix è in `main`, con riferimento al commit.

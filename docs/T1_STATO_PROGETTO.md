@@ -12,15 +12,14 @@
 ## 1. Snapshot ad alto livello
 
 - **Versione progetto**: 2.0 (post-pivot social/backend)
-- **Modulo corrente**: 0.A — Sicurezza e setup `.env`
-- **Sub-stato**: pre-coding chiuso (Git inizializzato, baseline commit, push GitHub). Prossimo: setup tecnico `flutter_dotenv` + `EnvConfig` + refactor `TmdbConstants` + `main()` async.
-- **Build status**: ⚠️ il codebase v1 attualmente **NON funziona a runtime** perché `TmdbConstants.apiKey` è stato sterilizzato a placeholder che lancia `UnimplementedError`. È stato voluto e temporaneo: il refactor a `EnvConfig.tmdbApiKey` lo rimette online nei prossimi step del 0.A.
+- **Modulo corrente**: 0.B — Quality baseline (in attesa di inizio prossima sessione)
+- **Sub-stato**: Modulo 0.A **chiuso e taggato `v0.A-cleanup`**. App funzionante: TMDB key letta da `.env` via `EnvConfig`, `main()` async con `WidgetsFlutterBinding.ensureInitialized()` e `dotenv.load()` prima di `runApp`.
+- **Build status**: ✅ `flutter run` su Chrome verde, Discovery carica film TMDB regolarmente.
 - **Backend**: ❌ non ancora setuppato (Modulo 1)
 - **Auth**: ❌ non ancora implementata (Modulo 1)
-- **Repo Git**: ✅ inizializzato, primo commit fatto, push su GitHub completato
+- **Repo Git**: ✅ `main` allineato con `origin/main`, tag `v0.A-cleanup` pushato.
 - **GitHub URL**: https://github.com/cristiano213/cinelog (pubblico)
-- **Problemi aperti**: 21 (#1 e #19 in progress nel 0.A, gli altri invariati)
-
+- **Problemi aperti**: 22 (#1 e #19 **chiusi**, #22 nuovo da bug emerso in sessione)
 ---
 
 ## 2. Cosa è stato fatto
@@ -34,57 +33,54 @@
 - TMDB integration con cache e paginazione
 - Riverpod come state management ovunque
 
-### Sessione corrente (Modulo 0.A pre-coding)
-- ✅ Tutorial Git completo (concetti + comandi base + Conventional Commits)
-- ✅ Installazione e config Git su Windows: `user.name`, `user.email` (GitHub no-reply), `init.defaultBranch=main`, `core.autocrlf=true`
-- ✅ Email privacy GitHub: attivata "Keep my email addresses private" + "Block command line pushes that expose my email"
-- ✅ Progetto spostato fuori da OneDrive: nuova path `C:\Users\serlo\Dev\cinelog\`
-- ✅ Aggiornato `.gitignore` con: `.env`, `.env.local`, `.env.*.local`, `.metadata`, segreti firma Android (`*.keystore`, `*.jks`, `google-services.json`), file iOS/macOS, `*.iml`, `.idea/`, ecc.
-- ✅ Scan di sicurezza pre-commit eseguita con Claude Code: 1 CRITICAL (TMDB key hardcoded), 1 HIGH (key leak via print URL), 3 MEDIUM (avoid_print + 10 print + .env.example mancante), 1 LOW (.metadata mancante in gitignore). I findings rimandati a 0.A successivi e 0.B sono mappati a problemi #1, #7 (e altri).
-- ✅ Rotazione API key TMDB sulla dashboard (vecchia compromessa, nuova mai esposta)
-- ✅ Sterilizzazione `lib/core/constants.dart`: `apiKey` è ora un getter che lancia `UnimplementedError` (fail-fast). La key reale entrerà via `EnvConfig` nei prossimi step.
-- ✅ Creato `.env.example` in root con template tre variabili (TMDB, Supabase, Google Places)
-- ✅ `git init` + baseline commit (hash `309aae9`): 177 file, 17085 righe, chore con riferimento a #1 e #19
-- ✅ Repo GitHub creato: https://github.com/cristiano213/cinelog (pubblico, no README/license preimpostati)
-- ✅ `git remote add origin` + `git push -u origin main` riusciti, branch tracking impostato
+### Sessione corrente (Modulo 0.A tecnico — chiusura)
+- ✅ Installato Claude Code via native installer Windows (`irm https://claude.ai/install.ps1 | iex`), versione 2.1.141
+- ✅ Risolto problema `Path` utente non aggiornato dallo script di installazione: aggiunta manuale di `C:\Users\serlo\.local\bin` al `Path` utente tramite `[Environment]::SetEnvironmentVariable(...)` da PowerShell
+- ✅ Primo avvio di Claude Code nel progetto, autenticazione browser-based ereditata da sessione VS Code precedente. Modello attivo: Sonnet 4.6 su piano Pro
+- ✅ Branch `module-0-cleanup` creato e poi mergiato via PR #1 su `main`
+- ✅ Aggiunta dipendenza `flutter_dotenv: ^6.0.1` (versione 6.x — divergenza dalla v5.x prevista in `T2_ARCHITETTURA` §1, da allineare in doc T2)
+- ✅ `.env` registrato come asset Flutter in `pubspec.yaml`, sezione `flutter:` ripulita dai commenti template
+- ✅ Creato `lib/core/config/env_config.dart` con pattern fail-fast: getter per `TMDB_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `GOOGLE_PLACES_API_KEY`. Ogni getter lancia `StateError` esplicito con nome variabile se manca o è vuota.
+- ✅ Refactor `lib/core/constants.dart`: `TmdbConstants.apiKey` ora delega a `EnvConfig.tmdbApiKey`, rimosso `UnimplementedError` placeholder
+- ✅ Refactor `lib/main.dart`: `Future<void> main() async` + `WidgetsFlutterBinding.ensureInitialized()` + `await dotenv.load(fileName: '.env')` prima di `runApp`. **Chiude #19**
+- ✅ Creato `.env` reale in root con TMDB key vera, gitignore verificato con `git check-ignore -v`. **Chiude #1**
+- ✅ Commit `89ff62c` (`feat(config): load TMDB API key from .env via EnvConfig`), push, PR #1 con descrizione Markdown, self-review tab "Files changed", merge tramite "Create a merge commit"
+- ✅ Branch remoto `module-0-cleanup` cancellato via `git push origin --delete`, branch locale via `git branch -d`
+- ✅ Tag `v0.A-cleanup` annotated creato su `9dce0ac` e pushato
+- ✅ Bug nuovo individuato durante test esplorativo: "cinema più frequentato" usa tie-break instabile in `stats_provider`. Registrato come **#22**, fix naturale in Modulo 3
+- ✅ Riorganizzazione cartella `docs/tutorials/`: split tra `tools/` (come si fa X tecnicamente) e `method/` (come si lavora professionalmente)
 
 ---
 
 ## 3. Prossimi passi immediati
 
-Da affrontare nella **prossima sessione**, in chat nuova con contesto fresco.
+Modulo 0.A formalmente **chiuso**. La prossima sessione apre il **Modulo 0.B — Quality baseline**.
 
-### 3.1 Setup Claude Code da CLI
-Prima di toccare codice, installazione e primo test di Claude Code in modalità terminale (non solo estensione VS Code).
-- `npm install -g @anthropic-ai/claude-code` (richiede Node.js installato)
-- `claude` per login interattivo
-- Primo test su CineLog: lettura di un file e generazione di un piano
-- Documentazione comandi base CC in `docs/CLAUDE_CODE_REFERENCE.md` (da generare in sessione)
+### 3.1 Strategie di efficienza concordate (sessione 15/05/2026)
 
-### 3.2 Modulo 0.A — completamento (setup tecnico .env)
-Branch `module-0-cleanup` (da creare).
-1. `flutter pub add flutter_dotenv` (aggiunge dipendenza a pubspec.yaml)
-2. Dichiarazione `.env` come asset in `pubspec.yaml`
-3. Creazione `.env` reale in root con la NUOVA chiave TMDB (gli altri due placeholder lasciati)
-4. Creazione `lib/core/config/env_config.dart` con pattern fail-fast (getter `tmdbApiKey`, `supabaseUrl`, `supabaseAnonKey`, `googlePlacesApiKey`)
-5. Refactor `lib/core/constants.dart`: `apiKey` legge da `EnvConfig.tmdbApiKey` (rimuove `UnimplementedError`)
-6. Refactor `lib/main.dart`: `void main() async`, `WidgetsFlutterBinding.ensureInitialized()`, `await dotenv.load(fileName: '.env')`, poi `runApp(...)`. Risolve #19.
-7. Test: `flutter run` su un device. Verifica che Discovery carichi film da TMDB. **L'app deve tornare a funzionare** dopo essere stata rotta dal commit baseline.
-8. Commit `feat: load TMDB key from .env via EnvConfig` (o simile), push del branch
-9. PR su GitHub da `module-0-cleanup` a `main`, auto-review del diff, merge
-10. Tag `v0.A-cleanup` a fine modulo, push del tag
-11. Chiude #1 e #19 in `T1_PROBLEMI_APERTI`
+Sei strategie operative concordate per la gestione di sessioni future, applicabili a tutti i progetti paralleli (Nexova, BookShelf, ArcaneDuel) oltre a CineLog:
 
-Tempo stimato: 1 sessione (45-60 min).
+- **A — Chat corte e frequenti**: reset contesto regolare per evitare crescita esponenziale dei costi per turno
+- **B — Claude Code per task meccanici**: refactor pattern noti, generazione boilerplate, search-replace
+- **C — Doc in modalità diff**: passare solo sezioni nuove/cambiate, non rigenerazione integrale
+- **D — Tier 2 stabile**: toccare solo per cambi strutturali veri, non polishing
+- **E — Sessione low-budget vs deep**: dichiarare modalità a inizio sessione, adattare pattern didattico
+- **F — Chat fork per task lunghi**: aprire chat secondaria per task >2h, sessione principale resta corta
 
-### 3.3 Modulo 0.B — Quality baseline (sessione successiva)
-1. `analysis_options.yaml` con regole stringenti
-2. `debugPrint` al posto di `print` ovunque
-3. `withValues(alpha)` al posto di `withOpacity`
-4. Fix bug sicuri: rimuovere `ref.invalidate(cinemaNotesProvider)` da `finance_provider.updateEntry`; `monthKey` zero-padded
-5. Chiude #4, #7, #8, #10
+Da formalizzare nel Modulo 0.B in `docs/tutorials/method/SESSION_EFFICIENCY.md`.
+### 3.2 Modulo 0.B — Quality baseline
+1. `analysis_options.yaml` con regole stringenti (verificare quali `lint` sono attive ora, perché `flutter analyze` ha mostrato 16 info post-`flutter_lints` aggiornato)
+2. **Task delegabile a Claude Code**: refactor `print` → `debugPrint` in `local_storage_service.dart` (13 occorrenze) + `movie_repository.dart` (2 occorrenze). Chiude #7
+3. **Task delegabile a Claude Code**: `withOpacity` → `withValues(alpha: ...)` in `movie_detail_screen.dart`. Chiude #8
+4. Rimozione `ref.invalidate(cinemaNotesProvider)` da `finance_provider.updateEntry`. Chiude #4
+5. Fix `monthKey` zero-padded in `finance_entry.dart`. Chiude #10
+6. Branch dedicato `module-0-B-quality`, PR, merge, tag `v0.B-quality`
 
-Tempo stimato: 1 sessione.
+Stima: 1 sessione (45-60 min) se Claude Code gestisce i task meccanici.
+
+### 3.3 Da definire prima del Modulo 0.B
+- Creare il file `docs/tutorials/method/SESSION_EFFICIENCY.md` con le strategie A-F formalizzate
+- Decidere se introdurre subito il file `docs/tutorials/method/CLAUDE_CODE_USAGE.md` (workflow per delegare task)   
 
 ---
 

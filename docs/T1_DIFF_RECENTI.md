@@ -6,6 +6,78 @@
 
 ---
 
+## Sessione — 15/05/2026 — Modulo 0.A tecnico (chiusura modulo)
+
+**Durata sessione**: una giornata, con pausa pranzo.
+**Branch**: `module-0-cleanup` → mergiato in `main` via PR #1.
+**Commit prodotti**: 1 commit feature (`89ff62c`) + 1 merge commit (`9dce0ac`).
+**Tag prodotto**: `v0.A-cleanup` su `9dce0ac`.
+
+### Cosa è successo
+
+**Claude Code installato e configurato**. Native PowerShell installer Anthropic (`irm https://claude.ai/install.ps1 | iex`). Versione `2.1.141`. Bug noto incontrato: lo script ha installato il binario in `C:\Users\serlo\.local\bin\` ma non ha aggiornato il `Path` utente Windows. Risolto manualmente via `[Environment]::SetEnvironmentVariable("Path", $newPath, "User")` da PowerShell. Da quel momento `claude --version` funziona da qualsiasi shell. Modello in uso: Sonnet 4.6 su piano Pro (Opus disponibile via `/model` a 2× consumo, da usare ad-hoc per task di ragionamento profondo).
+
+**Branch `module-0-cleanup` creato** con `git switch -c module-0-cleanup`. Working tree pulito di partenza.
+
+**Setup `flutter_dotenv`**. `flutter pub add flutter_dotenv` ha installato la versione `^6.0.1` (più recente della `^5.1.0` prevista in `T2_ARCHITETTURA` §1). Asset `.env` registrato in `pubspec.yaml` sotto la sezione `flutter:` con indentazione corretta. Sezione `flutter:` ripulita dai commenti template Flutter non più rilevanti.
+
+**Creazione `EnvConfig`**. Nuovo file `lib/core/config/env_config.dart`. Constructor privato (`EnvConfig._()`) per impedire istanziazione. Quattro getter (`tmdbApiKey`, `supabaseUrl`, `supabaseAnonKey`, `googlePlacesApiKey`) che delegano a `_required(key)` privato. Pattern fail-fast: `StateError` esplicito con nome della variabile mancante.
+
+**Refactor `constants.dart`**: `TmdbConstants.apiKey` ora getter che ritorna `EnvConfig.tmdbApiKey`. Rimosso `UnimplementedError` placeholder.
+
+**Refactor `main.dart`**: `Future<void> main() async`, `WidgetsFlutterBinding.ensureInitialized()`, `await dotenv.load(fileName: '.env')` prima di `runApp`. Blocco `_InitializedApp`/`initializeAppProvider` legacy mantenuto, rimozione rinviata al Modulo 1.
+
+**Creazione `.env` reale**. Verifica pre-emptiva `git check-ignore -v .env` superata. File creato con tre variabili (`TMDB_API_KEY` valorizzato, le altre come placeholder).
+
+**Test runtime su Chrome**. `flutter run` parte, Discovery carica film TMDB. App di nuovo funzionante dopo la sterilizzazione baseline. Falso allarme intermedio: i film non comparivano subito al primo run, causa modifiche non salvate dall'editor (Ctrl+S dimenticato). Risolto.
+
+**Commit + PR + merge**. Commit `89ff62c` con messaggio multi-paragrafo Conventional Commits. Push su `origin/module-0-cleanup` con tracking upstream. PR #1 creata da browser GitHub con titolo + descrizione Markdown strutturata (sommario, cambiamenti, note, riferimenti). Self-review nella tab "Files changed" (UI GitHub aggiornata: il toggle "Unified/Split" è ora dentro un dropdown nascosto da un'icona ingranaggio). Merge tramite "Create a merge commit" che preserva il commit feature singolo + crea il merge commit `9dce0ac`. Branch remoto cancellato via `git push origin --delete module-0-cleanup`, branch locale via `git branch -d`.
+
+**Tag `v0.A-cleanup`** annotated creato su `9dce0ac`, push del tag.
+
+**Bug nuovo individuato**: durante test esplorativo dell'app, la schermata Statistiche mostra come "cinema più frequentato" l'ultimo cinema inserito a parità di frequenza, invece di un tie-break deterministico. Registrato come problema #22 in `T1_PROBLEMI_APERTI`, fix naturale in Modulo 3 quando i cinema diventano entità canoniche via Google Places.
+
+**Discussione strategica strutturale**: l'utente ha definito CineLog come progetto-base metodologico per altri tre progetti in parallelo (Nexova, BookShelf, ArcaneDuel) + tesina. Vincoli temporali stretti (4 mesi, budget usage settimanale al limite). Sono state concordate sei strategie di efficienza (A-F, vedi `T1_STATO_PROGETTO` §3.1) da applicare dal Modulo 0.B in poi: chat corte, Claude Code per task meccanici, docs in modalità diff, Tier 2 stabile, sessioni low-budget vs deep, chat fork per task lunghi.
+
+**Riorganizzazione tutorial**. Cartella `docs/tutorials/` introdotta. Sotto-cartelle `tools/` (come si fa X tecnicamente: Git, shell, dotenv, ecc.) e `method/` (come si lavora professionalmente: convenzioni, workflow, organizzazione documentale). I file esistenti `SHELL_COMMANDS_REFERENCE.md`, `GIT_WORKFLOW_REFERENCE.md`, `GIT_NEW_PROJECT_TUTORIAL.md` spostati nelle nuove sottocartelle via `git mv` (storia preservata).
+
+### Bug/comportamenti notevoli incontrati
+
+- **Path utente Windows non aggiornato dallo script Claude Code**: bug specifico ambiente Windows, risolto come da sopra. Lezione documentata: dopo qualsiasi script di installazione che dovrebbe aggiornare `Path`, verificare con `[Environment]::GetEnvironmentVariable("Path", "User") -split ";"` prima di concludere "installato".
+- **VS Code save dimenticato durante refactor**: già successo nella sessione precedente. Lezione rinforzata: dopo modifica file e prima di `flutter run` / `git diff`, sempre `Ctrl+S` esplicito o `Get-Content` di verifica.
+- **Pager `less` di Git ancora insidioso**: durante `git diff --cached` PowerShell finisce nel pager. Tasto `q` per uscire (memorizzato definitivamente). Considerata disabilitazione globale con `git config --global core.pager ""`, decisione rinviata.
+- **`git diff` paginato incollato due volte**: durante scroll fino in fondo + uscita pager, il contenuto è stato copiato due volte. Innocuo, ma confermato che il pager è una fonte di confusione per chi non lo conosce.
+- **PR di GitHub UI cambiata da gennaio 2026**: la mia knowledge è ferma a gennaio, alcuni elementi UI sono ora diversi (es. toggle Unified/Split è dentro un dropdown). L'utente ha trovato in autonomia dopo 20 min di ricerca. Lezione: chiedere all'utente di descrivere l'UI corrente quando le mie istruzioni "click qui" non trovano corrispondenza.
+
+### Decisioni minori prese
+
+- **Tag style**: prefisso `v` (es. `v0.A-cleanup`), nome modulo come suffisso. Convenzione coerente con T1_ADDENDUM §5.2.
+- **Strategia di merge in PR**: "Create a merge commit" come default (preserva commit individuali del branch). "Squash" rinviato a casi specifici (branch con molti commit di "save point" senza valore storico individuale).
+- **Branch eliminato post-merge**: sia remoto che locale, immediatamente. Convenzione "branch monouso per modulo".
+
+### Documenti aggiornati a fine sessione
+
+- `T1_STATO_PROGETTO.md`: sostituzione §1, §2 sotto-sezione "Sessione corrente", §3
+- `T1_DIFF_RECENTI.md`: questa sezione in cima (cronologia inversa)
+- `T1_PROBLEMI_APERTI.md`: #1 e #19 marcati `[CHIUSO - Modulo 0.A, 15/05/2026]`, aggiunta sezione #22, aggiornati indice rapido + checklist + statistiche
+- Riorganizzazione fisica `docs/tutorials/` in `tools/` e `method/` via `git mv`
+
+### Non generati in questa sessione (rimandati per consapevolezza budget)
+
+- `docs/tutorials/method/SESSION_EFFICIENCY.md` (Modulo 0.B)
+- `docs/tutorials/method/CLAUDE_CODE_USAGE.md` (Modulo 0.B, dopo prima esperienza estesa con CC)
+- `docs/tutorials/method/TUTORIAL_STYLE_GUIDE.md` (quando emerge necessità)
+- README di indice in `tools/` e `method/` (quando aggiunto il prossimo tutorial)
+- Allineamento `T2_ARCHITETTURA.md` §1 (`flutter_dotenv ^6.0.1` invece di `^5.1.0`) (prossima revisione T2)
+
+### Stato a fine sessione
+
+- Repo locale: pulito, allineato con `origin/main`, tag `v0.A-cleanup` localmente e su GitHub
+- Repo remoto: 3 commit + 1 merge + 1 tag oltre alla baseline
+- App: ✅ funzionante a runtime, TMDB key letta correttamente da `.env`
+- Problemi aperti: 22 totali (2 chiusi: #1 e #19; 1 nuovo: #22)
+- Prossimo: Modulo 0.B — Quality baseline, in sessione fresca con strategie A-F attive
+
 ## Sessione — 14/05/2026 — Modulo 0.A pre-coding
 
 **Durata stimata sessione**: ~3 ore in chat.
