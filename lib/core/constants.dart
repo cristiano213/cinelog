@@ -1,18 +1,12 @@
+import 'config/env_config.dart';
+
 /// TMDB API configuration constants.
 ///
-/// SECURITY NOTE: [apiKey] is intentionally left as a non-functional placeholder
-/// in this commit. The real key is read from `.env` via `EnvConfig.tmdbApiKey`
-/// in subsequent commits of Module 0.A.
-///
-/// Until the dotenv migration is complete, any code path that touches
-/// [TmdbConstants.apiKey] will throw [UnimplementedError] at runtime,
-/// making misuse loud and immediate rather than silent.
+/// [apiKey] is loaded from `.env` via [EnvConfig] at runtime.
+/// All other constants are compile-time and live here.
 class TmdbConstants {
-  // ignore: unused_element
-  static String get apiKey => throw UnimplementedError(
-        'TmdbConstants.apiKey is a placeholder. '
-        'Migrate to EnvConfig.tmdbApiKey (Module 0.A, step "EnvConfig").',
-      );
+  /// TMDB v3 auth key. Loaded from `.env`.
+  static String get apiKey => EnvConfig.tmdbApiKey;
 
   static const String baseUrl = 'https://api.themoviedb.org/3';
   static const String imageBaseUrl = 'https://image.tmdb.org/t/p';

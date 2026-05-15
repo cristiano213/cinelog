@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/app_initialization_provider.dart';
 import 'screens/main_navigation_screen.dart';
 
-void main() {
+Future<void> main() async {
+  // Required when calling async code before runApp().
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load environment variables from .env (asset declared in pubspec.yaml).
+  // Must complete before any code accesses EnvConfig.
+  await dotenv.load(fileName: '.env');
+
   runApp(
     const ProviderScope(
       child: CineLogApp(),
